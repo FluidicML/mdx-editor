@@ -11,6 +11,7 @@ import {
   DecoratorNode,
   EditorConfig,
   KEY_BACKSPACE_COMMAND,
+  KEY_DOWN_COMMAND,
   LexicalEditor,
   SELECTION_CHANGE_COMMAND,
   createEditor,
@@ -267,6 +268,14 @@ export const NestedLexicalEditor = function <T extends Mdast.RootContent>(props:
     }
 
     return mergeRegister(
+      editor.registerCommand(
+        KEY_DOWN_COMMAND,
+        () => {
+          updateParentNode()
+          return false
+        },
+        COMMAND_PRIORITY_EDITOR
+      ),
       editor.registerCommand(
         FOCUS_COMMAND,
         () => {
