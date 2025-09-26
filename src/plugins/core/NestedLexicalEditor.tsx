@@ -288,7 +288,11 @@ export const NestedLexicalEditor = function <T extends Mdast.RootContent>(props:
         // that the key pressed actually causes a change in the
         // markup. E.g. an arrow key should not trigger an update.
         KEY_DOWN_COMMAND,
-        () => {
+        (event) => {
+          if (!block && event.key === 'Enter') {
+            event.preventDefault()
+            return true
+          }
           updateParentNode()
           return false
         },
