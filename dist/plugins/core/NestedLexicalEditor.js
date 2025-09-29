@@ -1,4 +1,4 @@
-import { $addUpdateTag, $getNodeByKey, createEditor, $getRoot, KEY_ENTER_COMMAND, COMMAND_PRIORITY_EDITOR, KEY_DOWN_COMMAND, FOCUS_COMMAND, COMMAND_PRIORITY_LOW, BLUR_COMMAND, SELECTION_CHANGE_COMMAND, COMMAND_PRIORITY_HIGH, KEY_BACKSPACE_COMMAND, COMMAND_PRIORITY_CRITICAL } from "lexical";
+import { $addUpdateTag, $getNodeByKey, createEditor, $getRoot, KEY_DOWN_COMMAND, COMMAND_PRIORITY_EDITOR, FOCUS_COMMAND, COMMAND_PRIORITY_LOW, BLUR_COMMAND, SELECTION_CHANGE_COMMAND, COMMAND_PRIORITY_HIGH, KEY_BACKSPACE_COMMAND, COMMAND_PRIORITY_CRITICAL } from "lexical";
 import React__default from "react";
 import { NESTED_EDITOR_UPDATED_COMMAND, rootEditor$, importVisitors$, exportVisitors$, usedLexicalNodes$, jsxComponentDescriptors$, directiveDescriptors$, codeBlockEditorDescriptors$, jsxIsAvailable$, nestedEditorChildren$, lexicalTheme$, editorInFocus$ } from "./index.js";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -129,32 +129,19 @@ const NestedLexicalEditor = function(props) {
         updateMdastNode(getUpdatedMdastNode(structuredClone(mdastNode), content2));
       });
     }
-    return mergeRegister(
+    const removeUpdateListener = editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        updateParentNode();
+      });
+    });
+    const removeMergeRegister = mergeRegister(
       editor.registerCommand(
-        // If the nested editor isn't a block editor, it silently
-        // drops values after a newline. Just don't process newlines
-        // at all.
-        KEY_ENTER_COMMAND,
-        (event) => {
-          if (!block) {
-            event == null ? void 0 : event.preventDefault();
-            return true;
-          }
-          return false;
-        },
-        COMMAND_PRIORITY_EDITOR
-      ),
-      editor.registerCommand(
-        // TODO: This feels too broad. It'd be better to verify
-        // that the key pressed actually causes a change in the
-        // markup. E.g. an arrow key should not trigger an update.
         KEY_DOWN_COMMAND,
         (event) => {
           if (!block && event.key === "Enter") {
             event.preventDefault();
             return true;
           }
-          updateParentNode();
           return false;
         },
         COMMAND_PRIORITY_EDITOR
@@ -210,6 +197,10 @@ const NestedLexicalEditor = function(props) {
         COMMAND_PRIORITY_CRITICAL
       )
     );
+    return () => {
+      removeUpdateListener();
+      removeMergeRegister();
+    };
   }, [
     block,
     editor,

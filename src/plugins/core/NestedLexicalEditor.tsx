@@ -268,32 +268,21 @@ export const NestedLexicalEditor = function <T extends Mdast.RootContent>(props:
       })
     }
 
-    return mergeRegister(
+    // Ensure the parent knows when a mutation occurs.
+    const removeUpdateListener = editor.registerUpdateListener(({editorState}) => {
+      editorState.read(() => {
+        updateParentNode()
+      });
+    });
+
+    const removeMergeRegister = mergeRegister(
       editor.registerCommand(
-        // If the nested editor isn't a block editor, it silently
-        // drops values after a newline. Just don't process newlines
-        // at all.
-        KEY_ENTER_COMMAND,
-        (event) => {
-          if (!block) {
-            event?.preventDefault()
-            return true
-          }
-          return false
-        },
-        COMMAND_PRIORITY_EDITOR
-      ),
-      editor.registerCommand(
-        // TODO: This feels too broad. It'd be better to verify
-        // that the key pressed actually causes a change in the
-        // markup. E.g. an arrow key should not trigger an update.
         KEY_DOWN_COMMAND,
         (event) => {
           if (!block && event.key === 'Enter') {
             event.preventDefault()
             return true
           }
-          updateParentNode()
           return false
         },
         COMMAND_PRIORITY_EDITOR
@@ -350,6 +339,11 @@ export const NestedLexicalEditor = function <T extends Mdast.RootContent>(props:
         COMMAND_PRIORITY_CRITICAL
       )
     )
+
+    return () => {
+      removeUpdateListener();
+      removeMergeRegister()
+    }
   }, [
     block,
     editor,
